@@ -1,0 +1,4 @@
+5000,50000,k3sm01,mknssd-nvme-thin,BC:24:11:7E:15:41
+5001,50000,k3sm02,kingston-thin-00,BC:24:11:10:EA:62
+5002,50000,k3sm03,local-lvm
+5010,50000,k3sw01,mknssd-nvme-thin

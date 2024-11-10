@@ -60,3 +60,41 @@ The script `rollback_pve_vms.sh` can rollback the VMs to a snapshot of your choi
 ./rollback_pve_vms vms_current.conf start
 ```
 This will power-off the vms, rollback to FRESH and then start them at the end.
+
+
+# TO-DO
+
+##### 2023-11-10 - Automate template creation from cloud image
+
+Rough commands to be made into a script:
+```bash
+cd /var/lib/vz-image/template/iso/
+export IMGNAME="debian-12-generic-amd64-20241004-1890.raw"
+export IMGURL="https://cdimage.debian.org/images/cloud/bookworm/20241004-1890/$IMGNAME"
+export IMG512SUM="a22fa2194d8b6ff95a39959cc088f2de28aa1dbe5c61509f41d6ad080e1872ec6d70f1d65da76e3e1691a74a9a55cb36718549b0be8677dfd89189ff457db901"
+
+wget $IMGURL
+sha512sum $IMGNAME
+echo $IMG512SUM
+
+cp $IMGNAME $IMGNAME.original
+virt-customize -a $IMGNAME --install qemu-guest-agent,ncat,net-tools,bash-completion
+virt-customize -a $IMGNAME --delete /etc/machine-id --delete /var/lib/machine-id
+virt-customize -a $IMGNAME --run-command systemd-machine-id-setup
+
+export VMID=50200 
+export VMNAME='debian12-cloud'
+export DATASTORE='datastore_name'
+
+qm create     $VMID --memory 2048 --core 1 --name $VMNAME --net0 virtio,bridge=vmbr0,firewall=1
+qm importdisk $VMID $IMGNAME $DATASTORE
+qm set        $VMID --scsihw virtio-scsi-single --scsi0 "$DATASTORE":"vm-$VMID-disk-0"
+qm resize     $VMID scsi0 +18G
+qm set        $VMID --ide2 "$DATASTORE":cloudinit
+qm set        $VMID --boot c --bootdisk scsi0
+qm set        $VMID --serial0 socket --vga serial0
+qm set        $VMID --agent enabled=1,fstrim_cloned_disks=1
+
+qm template $VMID
+```
+
